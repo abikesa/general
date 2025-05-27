@@ -16,13 +16,22 @@ def run(cmd, cwd=None, check_error=True):
             print(f"⚠️ Warning:\n{result.stderr.strip()}")
     return result.stdout.strip()
 
-def deploy_page(folder: Path, branch: str, message: str):
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Deploy folder with index.html to any branch.")
+    parser.add_argument("folder", help="Path to folder with index.html")
+    parser.add_argument("--branch", default="gh-pages", help="Target branch (default: gh-pages)")
+    parser.add_argument("--message", default="2 Chronicles 16:9 as mission", help="Commit message")
+    args = parser.parse_args()
+
+    folder = Path(args.folder).resolve()
+    branch = args.branch
+    message = args.message
     index_path = folder / "index.html"
+
     if not index_path.exists():
         print(f"❌ No index.html found in: {folder}")
         sys.exit(1)
 
-    rel_path = os.path.relpath(index_path)
     print(f"\n📦 Folder: {folder}")
     print(f"🌿 Branch: {branch}")
     print(f"📝 Commit message: {message}\n")
@@ -30,7 +39,9 @@ def deploy_page(folder: Path, branch: str, message: str):
     if branch == "gh-pages":
         run(f"ghp-import -n -p -f -m {shlex.quote(message)} {shlex.quote(str(folder))}")
     else:
-        run(f"git add {shlex.quote(rel_path)}")
+        run(f"git add {shlex.quote(os.path.relpath(index_path))}")
+        Path(".nojekyll").touch(exist_ok=True)
+        run("git add .nojekyll")
         commit_output = run(f"git commit -m {shlex.quote(message)}", check_error=False)
         if "nothing to commit" in commit_output.lower():
             print("⚠️ No new changes to commit.")
@@ -38,16 +49,4 @@ def deploy_page(folder: Path, branch: str, message: str):
             print(commit_output)
         run(f"git push origin {branch}")
 
-    print(f"✅ Done. {rel_path} pushed to {branch}.\n")
-
-def main():
-    parser = argparse.ArgumentParser(description="Deploy folder with index.html to any branch.")
-    parser.add_argument("folder", help="Path to folder with index.html")
-    parser.add_argument("--branch", default="gh-pages", help="Target branch (default: gh-pages)")
-    parser.add_argument("--message", default="2 Chronicles 16:9 as mission", help="Commit message")
-
-    args = parser.parse_args()
-    deploy_page(Path(args.folder).resolve(), args.branch, args.message)
-
-if __name__ == "__main__":
-    main()
+    print(f"✅ Done. {os.path.relpath(index_path)} pushed to {branch}.\n")
