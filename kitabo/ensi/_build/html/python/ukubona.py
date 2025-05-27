@@ -1,9 +1,11 @@
 import os
 import subprocess
-import shutil
 from pathlib import Path
 from datetime import datetime
 import shlex
+
+# 🧠 Set your chosen folder path *right here*:
+INDEX_FOLDER = "kitabo/ensi/wiki/"
 
 def run(cmd, cwd=None, check_error=True):
     print(f"▶️ {cmd}")
@@ -17,27 +19,20 @@ def run(cmd, cwd=None, check_error=True):
     return result.stdout.strip()
 
 def git_push_with_message(message="2 Chronicles 16:9 as mission"):
-    run("git add .")
-    quoted = shlex.quote(message)
-    commit_output = run(f'git commit -m {quoted}', check_error=False)
+    index_path = Path(INDEX_FOLDER) / "index.html"
+    if not index_path.exists():
+        print(f"❌ No index.html found in: {INDEX_FOLDER}")
+        exit(1)
+
+    run(f"git add {shlex.quote(str(index_path))}")
+    quoted_msg = shlex.quote(message)
+    commit_output = run(f"git commit -m {quoted_msg}", check_error=False)
+
     if "nothing to commit" in commit_output.lower():
         print("⚠️ No new changes to commit.")
     else:
         print(commit_output)
     run("git push")
-
-def move_index_html():
-    src = Path("index.html")
-    dest = Path("kitabo/ensi/index/index.html")
-    dest.parent.mkdir(parents=True, exist_ok=True)
-    if src.exists():
-        if dest.exists():
-            print("⚠️ Destination already exists. Skipping move.")
-        else:
-            shutil.move(str(src), str(dest))
-            print(f"✅ Moved: {src} → {dest}")
-    else:
-        print("⚠️ No root index.html found. Already moved or never existed.")
 
 def summarize_repo(root="."):
     print(f"\n📁 Scanning directory: {root}\n")
@@ -55,7 +50,6 @@ def summarize_repo(root="."):
     print(f"🗂️  Total files:  {total_files:>6}")
     print(f"📂 Total folders:{total_folders:>6}\n")
 
-    print("🧾 File breakdown:")
     types = {
         ".html": "📄 HTML files",
         ".md": "📓 Markdown files",
@@ -74,7 +68,7 @@ def summarize_repo(root="."):
     }
 
     for ext, label in types.items():
-        count = sum(v for k, v in ext_count.items() if k == ext)
+        count = ext_count.get(ext, 0)
         if count:
             print(f"  {label:<20}: {count:>4}")
 
@@ -82,7 +76,6 @@ def summarize_repo(root="."):
     print("✅ Done scanning.\n")
 
 if __name__ == "__main__":
-    print("\n🌍 Starting deployment sequence...\n")
-    move_index_html()
+    print(f"\n🌍 Deploying index.html from: {INDEX_FOLDER}\n")
     git_push_with_message("2 Chronicles 16:9 as mission")
     summarize_repo()
