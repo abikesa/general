@@ -31,7 +31,7 @@ def scan_and_delete(root_dir, dry_run=False):
         for f in filenames:
             match = is_incremented_duplicate(f)
             if match:
-                full_path = os.path.join(dirpath, f)
+                full_path = os.path.join(dirpath, f)    
                 action = "Would delete" if dry_run else "Deleting"
                 print(f"🗑️  {action} file: {full_path}")
                 if not dry_run:

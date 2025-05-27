@@ -1,11 +1,10 @@
 import os
 import subprocess
+import sys
 from pathlib import Path
 from datetime import datetime
 import shlex
-
-# 🧠 Set your chosen folder path *right here*:
-INDEX_FOLDER = "kitabo/ensi/wiki/"
+import argparse
 
 def run(cmd, cwd=None, check_error=True):
     print(f"▶️ {cmd}")
@@ -13,69 +12,59 @@ def run(cmd, cwd=None, check_error=True):
     if result.returncode != 0:
         if check_error:
             print(f"❌ Error:\n{result.stderr.strip()}")
-            exit(1)
+            sys.exit(1)
         else:
             print(f"⚠️ Warning:\n{result.stderr.strip()}")
     return result.stdout.strip()
 
-def git_push_with_message(message="2 Chronicles 16:9 as mission"):
-    index_path = Path(INDEX_FOLDER) / "index.html"
-    if not index_path.exists():
-        print(f"❌ No index.html found in: {INDEX_FOLDER}")
-        exit(1)
+def deploy_gh_pages(folder: Path, msg: str):
+    if not folder.exists() or not (folder / "index.html").exists():
+        print(f"❌ Invalid target: {folder}")
+        sys.exit(1)
 
-    run(f"git add {shlex.quote(str(index_path))}")
-    quoted_msg = shlex.quote(message)
+    print(f"\n🌍 Deploying to `gh-pages`: {folder}")
+    cmd = f"ghp-import -n -p -f -m {shlex.quote(msg)} {shlex.quote(str(folder))}"
+    run(cmd)
+    print("✅ gh-pages deployment complete.\n")
+
+def deploy_main(folder: Path, msg: str):
+    if not folder.exists() or not (folder / "index.html").exists():
+        print(f"❌ Invalid target: {folder}")
+        sys.exit(1)
+
+    print(f"\n🌐 Deploying to `main`: {folder}")
+    run(f"git add {shlex.quote(str(folder / 'index.html'))}")
+    quoted_msg = shlex.quote(msg)
     commit_output = run(f"git commit -m {quoted_msg}", check_error=False)
 
     if "nothing to commit" in commit_output.lower():
         print("⚠️ No new changes to commit.")
     else:
         print(commit_output)
-    run("git push")
+        run("git push")
+    print("✅ main branch commit complete.\n")
 
-def summarize_repo(root="."):
-    print(f"\n📁 Scanning directory: {root}\n")
-    total_files = 0
-    total_folders = 0
-    ext_count = {}
+def summarize_folder(folder: Path):
+    print(f"\n📦 Summary of folder: {folder}")
+    total_files = sum(len(filenames) for _, _, filenames in os.walk(folder))
+    print(f"🗂️  Total files: {total_files}")
+    print("🕰️ ", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
-    for dirpath, dirnames, filenames in os.walk(root):
-        total_folders += len(dirnames)
-        total_files += len(filenames)
-        for file in filenames:
-            ext = Path(file).suffix.lower()
-            ext_count[ext] = ext_count.get(ext, 0) + 1
+def main():
+    parser = argparse.ArgumentParser(description="Deploy Ukubona index.html to gh-pages or main.")
+    parser.add_argument("folder", help="Target folder containing index.html")
+    parser.add_argument("--branch", choices=["main", "gh-pages"], default="gh-pages", help="Branch to deploy to")
+    parser.add_argument("--message", default="2 Chronicles 16:9 as mission", help="Commit message")
 
-    print(f"🗂️  Total files:  {total_files:>6}")
-    print(f"📂 Total folders:{total_folders:>6}\n")
+    args = parser.parse_args()
+    target = Path(args.folder).resolve()
 
-    types = {
-        ".html": "📄 HTML files",
-        ".md": "📓 Markdown files",
-        ".py": "🐍 Python files",
-        ".js": "📜 JavaScript files",
-        ".css": "🎨 CSS files",
-        ".png": "🖼️  Image files",
-        ".jpg": "🖼️  Image files",
-        ".jpeg": "🖼️  Image files",
-        ".svg": "🖼️  Image files",
-        ".gif": "🖼️  Image files",
-        ".cff": "🧾 Citation (.cff)",
-        ".gz": "📦 Compressed files",
-        ".tar": "📦 Compressed files",
-        ".zip": "📦 Compressed files",
-    }
+    summarize_folder(target)
 
-    for ext, label in types.items():
-        count = ext_count.get(ext, 0)
-        if count:
-            print(f"  {label:<20}: {count:>4}")
-
-    print("\n🕰️  Timestamp:", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-    print("✅ Done scanning.\n")
+    if args.branch == "gh-pages":
+        deploy_gh_pages(target, args.message)
+    elif args.branch == "main":
+        deploy_main(target, args.message)
 
 if __name__ == "__main__":
-    print(f"\n🌍 Deploying index.html from: {INDEX_FOLDER}\n")
-    git_push_with_message("2 Chronicles 16:9 as mission")
-    summarize_repo()
+    main()
