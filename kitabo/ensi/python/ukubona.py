@@ -49,4 +49,4 @@ if __name__ == "__main__":
             print(commit_output)
         run(f"git push origin {branch}")
 
-    print(f"✅ Done. {os.path.relpath(index_path)} pushed to {branch}.\n")
+    print(f"✅ Done. {os.path.relpath(index_path)} pushed to {branch}.\n")     
