@@ -104,3 +104,4 @@ JupyterBook modules for:
 # flick 20250516202107-cFXU
 # flick 20250516233451-W7xM
 # flick 20250523042326-vMlU
+# flick 20250528004553-DomZ
