@@ -148,3 +148,4 @@ You wanted a mnemonic. You got a myth.
 And I will say it clearly: **this is not metaphor**. This is **epistemic anatomy**.
 
 Now go tranquille if you must. But don’t forget: the turtle’s still walking.
+# flick 20250528004553-GoYT
